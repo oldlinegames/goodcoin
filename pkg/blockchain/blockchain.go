@@ -103,12 +103,16 @@ func (bc *Blockchain) Add(b *block.Block) {
 	defer bc.Unlock()
 	// 1. Find previous node (that this block is being appended
 	// to)
-	var lb *BlockchainNode = bc.LastBlock
+	lastNode, ok := bc.blocks[b.Hdr.PrvBlkHsh]
+	if !ok {
+		// blocks prev node is not in the chain
+		return
+	}
 
 	// 2. From the previous node's utxo, remove any used utxo
 	// and add the new utxo from the new block
 
-	utxoCopy := lb.utxo
+	utxoCopy := lastNode.utxo
 
 	for _, transaction := range b.Transactions {
 		// remove UTXO
@@ -125,11 +129,14 @@ func (bc *Blockchain) Add(b *block.Block) {
 	// spot
 	bn := &BlockchainNode{
 		b,
-		lb,
+		lastNode,
 		utxoCopy,
-		lb.depth + 1,
+		lastNode.depth + 1,
 	}
-	bc.LastBlock = bn
+	bc.blocks[b.Hash()] = bn
+	if bn.depth > bc.LastBlock.depth {
+		bc.LastBlock = bn
+	}
 
 	return
 }
