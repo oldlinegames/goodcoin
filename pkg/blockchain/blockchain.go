@@ -121,7 +121,7 @@ func (bc *Blockchain) Add(b *block.Block) {
 			delete(utxoCopy, key)
 		}
 		for ind, txOutput := range transaction.Outputs {
-			key := txo.MkTXOLoc(txOutput.Hash(), uint32(ind))
+			key := txo.MkTXOLoc(transaction.Hash(), uint32(ind))
 			utxoCopy[key] = txOutput
 		}
 	}
@@ -355,13 +355,21 @@ func (bc *Blockchain) GetUTXOForAmt(amt uint32, pubKey string) ([]*UTXOInfo, uin
 	defer bc.Unlock()
 
 	lastUTXO := bc.LastBlock.utxo
+
+	// k, _ := json.Marshal(lastUTXO)
+	// fmt.Println(string(k))
+	// fmt.Printf("Amt Requested: %d\nFor Pubkey: %s\n", amt, pubKey)
 	var availableUTXO uint32 = 0
 	utxoForTransaction := []*UTXOInfo{}
 	var change uint32 = 0
+	if amt == 0 {
+		return utxoForTransaction, 0, true
+	}
 
 	for key, output := range lastUTXO {
 		// this is payable to the pubkey
 		if output.LockingScript == pubKey {
+			fmt.Printf("utxo found with amt %d\n", output.Amount)
 			txHash, txIndex := txo.PrsTXOLoc(key)
 			newInfo := &UTXOInfo{
 				TxHsh:  txHash,
@@ -378,7 +386,8 @@ func (bc *Blockchain) GetUTXOForAmt(amt uint32, pubKey string) ([]*UTXOInfo, uin
 			return utxoForTransaction, change, true
 		}
 	}
-	return nil, 0, false
+	fmt.Println("not enough for tx")
+	return utxoForTransaction, 0, false
 }
 
 // GenesisBlock creates the genesis block from
