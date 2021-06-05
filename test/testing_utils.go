@@ -30,7 +30,6 @@ func GenConf(port int) *pkg.Config {
 	return c
 }
 
-
 // First node is always the genesis node
 func NewCluster(n int) []*pkg.Node {
 	cluster := []*pkg.Node{NewGenNd()}
